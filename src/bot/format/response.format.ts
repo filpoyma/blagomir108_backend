@@ -1,32 +1,18 @@
 interface IGenerateResultLike {
   text: string;
-  image_prompt: string;
-  video_prompt: string;
 }
 
 const TELEGRAM_MESSAGE_LIMIT = 4096;
 
-export function escapeHtml(value: string): string {
-  return value
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;');
-}
-
 // Build HTML messages for Telegram (parse_mode: 'HTML').
+// `text` is LLM output as Telegram HTML (see rag.service); do not escape or tags break.
 // Splits into multiple messages if total length exceeds TELEGRAM_MESSAGE_LIMIT,
 // preferring section boundaries first, then paragraph boundaries.
 export function formatGenerateResult(result: IGenerateResultLike): string[] {
   const sections: string[] = [];
 
   if (result.text.trim()) {
-    sections.push(`<b>Текст</b>\n${escapeHtml(result.text.trim())}`);
-  }
-  if (result.image_prompt.trim()) {
-    sections.push(`<b>Image prompt</b>\n<code>${escapeHtml(result.image_prompt.trim())}</code>`);
-  }
-  if (result.video_prompt.trim()) {
-    sections.push(`<b>Video prompt</b>\n<code>${escapeHtml(result.video_prompt.trim())}</code>`);
+    sections.push(result.text.trim());
   }
 
   if (sections.length === 0) {

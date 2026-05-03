@@ -1,25 +1,43 @@
 import type { CommandContext } from 'grammy';
 import { upsertTelegramUser } from '../../services/telegram-users.service';
 import { config } from '../../config';
+import { clearHealthWizard } from '../flows/health-survey.wizard';
+import { buildSphereChoiceKeyboard } from '../keyboards/sphere.keyboard';
 import type { IBotContext } from '../types';
 
+const SPHERE_PROMPT = 'Какая сфера для тебя наиболее актуальна?';
+
 const WELCOME_LINES = [
-  'Привет! Я генерирую маркетинговый контент по запросу — текст, image-prompt и video-prompt.',
-  '',
-  'Просто напишите тему или ТЗ — например: <i>«Пост в Instagram про новую коллекцию весна 2026, акцент на эко-материалы»</i>.',
+  `🕉 Мое почтение
+      Добро пожаловать в пространство знаний и трансформации
+
+  Этот бот — ваш проводник по системе:
+    — самопознания
+    — работы с телом и психикой
+    — ведических знаний
+    — глубинных практик и медитаций
+
+📚 Здесь собраны материалы из канала:
+    • медитации и практики (NEO PSY ⚡)
+    • разборы заболеваний и состояний
+    • вед`,
   '',
   `Стартовый баланс: <b>${config.telegram.freeQuota}</b> запросов. Когда баланс закончится — напишите владельцу для пополнения.`,
 ];
 
 const HELP_LINES = [
   '<b>Как пользоваться</b>',
-  'Отправьте текстовое описание задачи. В ответ придут три блока:',
-  '• <b>Текст</b> — готовый маркетинговый текст;',
-  '• <b>Image prompt</b> — промпт для генератора изображений;',
-  '• <b>Video prompt</b> — промпт для генератора видео.',
+  'Выберете интересующую вас сферу',
+  '• <b>здоровье</b>',
+  '• <b>отношения</b>',
+  '• <b>деньги, карьера, реализация</b>',
+  '• <b>предназначение души</b>',
+  '• <b>разборы Джойтиш</b>',
+  '',
+  'Следуйте инструкциям',
   '',
   '<b>Команды</b>',
-  '/start — показать приветствие;',
+  '/start — запуск помошника;',
   '/help — это сообщение.',
 ];
 
@@ -27,6 +45,8 @@ export async function handleStart(ctx: CommandContext<IBotContext>): Promise<voi
   const user = ctx.from;
   const chat = ctx.chat;
   if (!user || !chat) return;
+
+  clearHealthWizard(user.id);
 
   await upsertTelegramUser({
     telegramId: user.id,
@@ -40,6 +60,11 @@ export async function handleStart(ctx: CommandContext<IBotContext>): Promise<voi
   });
 
   await ctx.reply(WELCOME_LINES.join('\n'), { parse_mode: 'HTML' });
+
+  await ctx.reply(SPHERE_PROMPT, {
+    parse_mode: 'HTML',
+    reply_markup: buildSphereChoiceKeyboard(),
+  });
 }
 
 export async function handleHelp(ctx: CommandContext<IBotContext>): Promise<void> {

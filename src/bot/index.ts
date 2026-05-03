@@ -5,15 +5,15 @@ import { whitelistMiddleware } from './middlewares/whitelist.middleware';
 import { rateLimitMiddleware } from './middlewares/rateLimit.middleware';
 import { trackingMiddleware } from './middlewares/tracking.middleware';
 import { handleHelp, handleStart } from './handlers/start.handler';
+import { handleHealthSurveyCallback } from './flows/health-survey.wizard';
+import { handleSphereChoice } from './handlers/sphere.handler';
 import { handleTextGenerate } from './handlers/generate.handler';
 import type { IBotContext } from './types';
 
 export type TBot = Bot<IBotContext>;
 
 export function createBot(): TBot {
-  if (!config.telegram.enabled) {
-    throw new Error('createBot called but config.telegram.enabled is false');
-  }
+  if (!config.telegram.enabled) throw new Error('createBot called but config.telegram.enabled is false');
 
   const bot = new Bot<IBotContext>(config.telegram.botToken);
 
@@ -24,6 +24,9 @@ export function createBot(): TBot {
 
   bot.command('start', handleStart);
   bot.command('help', handleHelp);
+
+  bot.callbackQuery(/^health_/, handleHealthSurveyCallback);
+  bot.callbackQuery(/^sphere_/, handleSphereChoice);
 
   bot.on('message:text', handleTextGenerate);
 
@@ -47,7 +50,11 @@ export function createBot(): TBot {
 }
 
 // Long-polling lifecycle. Returns once polling stops (bot.stop() called elsewhere).
+// Telegram allows either webhook OR getUpdates — never both. If a webhook was set
+// earlier (prod / ngrok test), bot.start() throws; deleteWebhook first clears it.
 export async function startBotPolling(bot: TBot): Promise<void> {
+  await bot.api.deleteWebhook({ drop_pending_updates: false });
+  console.log('[bot] cleared existing webhook (if any); starting long polling');
   await bot.start({
     onStart: (info) => {
       console.log(`[bot] long polling started as @${info.username}`);

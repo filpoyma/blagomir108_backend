@@ -4,8 +4,6 @@ import type { IBotContext } from '../types';
 
 export const trackingMiddleware: MiddlewareFn<IBotContext> = async (ctx, next) => {
   const userId = ctx.from?.id;
-  if (userId) {
-    void touchTelegramUser(userId);
-  }
+  if (userId) void touchTelegramUser(userId);
   await next();
 };

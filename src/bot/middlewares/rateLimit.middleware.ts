@@ -1,6 +1,7 @@
 import type { MiddlewareFn } from 'grammy';
 import { config } from '../../config';
 import type { IBotContext } from '../types';
+import { isUnlimitedTelegramUser } from '../utils/unlimited';
 
 interface IRateBucket {
   minute: number[];
@@ -22,8 +23,18 @@ function pruneAndCheck(timestamps: number[], now: number, windowMs: number): num
 }
 
 export const rateLimitMiddleware: MiddlewareFn<IBotContext> = async (ctx, next) => {
+  if (ctx.callbackQuery) {
+    await next();
+    return;
+  }
+
   const userId = ctx.from?.id;
   if (!userId) {
+    await next();
+    return;
+  }
+
+  if (isUnlimitedTelegramUser(userId)) {
     await next();
     return;
   }

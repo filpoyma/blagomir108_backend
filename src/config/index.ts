@@ -92,6 +92,8 @@ export const config = {
     webhookSecret: process.env.TELEGRAM_WEBHOOK_SECRET ?? '',
     ownerUserId: process.env.TELEGRAM_OWNER_USER_ID ?? '',
     allowedTelegramIds: parseIdList(process.env.TELEGRAM_ALLOWED_USERS),
+    /** TG numeric ids: no per-minute/per-day rate limit, no quota consume / quota exhaustion. */
+    unlimitedTelegramIds: parseIdList(process.env.TELEGRAM_UNLIMIT_USERS),
     rateLimitPerMinute: envInt('TELEGRAM_RATE_LIMIT_PER_MIN', 3),
     rateLimitPerDay: envInt('TELEGRAM_RATE_LIMIT_PER_DAY', 50),
     freeQuota: envInt('TELEGRAM_FREE_QUOTA', 5),

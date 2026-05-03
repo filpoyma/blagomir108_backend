@@ -21,6 +21,15 @@ export interface IQuotaSnapshot {
 
 const TABLE = 'telegram_users';
 
+/** Last completed health анкета (перезаписывается при новом прохождении). */
+export interface ITelegramHealthFacts {
+  bothering: string;
+  whenWorse: string;
+  severity: number;
+  desiredResult: string;
+  completedAt: string;
+}
+
 interface ITelegramUserRow {
   telegram_id: number;
   chat_id: number;
@@ -35,6 +44,8 @@ interface ITelegramUserRow {
   quota_total: number;
   quota_used: number;
   quota_resets_at: string | null;
+  health_facts: unknown;
+  last_sphere: string | null;
 }
 
 // Upsert profile fields and refresh last_seen_at. On INSERT, also seed quota_total
@@ -150,4 +161,32 @@ export async function consumeQuota(telegramId: number): Promise<boolean> {
   }
 
   return Array.isArray(data) && data.length > 0;
+}
+
+export async function setTelegramUserHealthFacts(
+  telegramId: number,
+  facts: ITelegramHealthFacts
+): Promise<void> {
+  const { error } = await supabaseAdmin
+    .from(TABLE)
+    .update({ health_facts: facts })
+    .eq('telegram_id', telegramId);
+
+  if (error) {
+    throw new Error(`Failed to save health_facts: ${error.message}`);
+  }
+}
+
+export async function setTelegramUserLastSphere(
+  telegramId: number,
+  sphere: string
+): Promise<void> {
+  const { error } = await supabaseAdmin
+    .from(TABLE)
+    .update({ last_sphere: sphere })
+    .eq('telegram_id', telegramId);
+
+  if (error) {
+    throw new Error(`Failed to save last_sphere: ${error.message}`);
+  }
 }

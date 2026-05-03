@@ -13,9 +13,14 @@ import {
 import { createTelegramRouter } from './routes/telegram.routes';
 
 const app = express();
+const port = config.port;
 
 app.use(cors());
 app.use(express.json({ limit: '10mb' }));
+app.use((req, _res, next) => {
+  console.log(`[${new Date().toISOString()}] ${req.method} ${req.path}`);
+  next();
+});
 
 app.get('/health', (_req, res) => {
   res.json({ status: 'ok' });
@@ -24,10 +29,13 @@ app.get('/health', (_req, res) => {
 let bot: TBot | null = null;
 if (config.telegram.enabled) {
   bot = createBot();
-  // Telegram webhook is mounted BEFORE the JWT-protected /api router so that
-  // authMiddleware does not interfere; auth is enforced via the secret_token
-  // header that grammy verifies inside webhookCallback.
-  app.use('/api/telegram', createTelegramRouter(bot, config.telegram.webhookSecret));
+  // Mount webhook route only in webhook mode. webhookCallback() marks the bot as
+  // webhook-driven in grammy; combining it with bot.start() (polling) throws.
+  if (config.telegram.mode === 'webhook') {
+    // Mounted BEFORE the JWT-protected /api router so authMiddleware does not
+    // interfere; auth is enforced via secret_token inside webhookCallback.
+    app.use('/api/telegram', createTelegramRouter(bot, config.telegram.webhookSecret));
+  }
 }
 
 app.use('/api', router);
@@ -49,8 +57,8 @@ app.use(
 
 const server = http.createServer(app);
 
-server.listen(config.port, () => {
-  console.log(`Server running on port ${config.port}`);
+server.listen(port, () => {
+  console.log(`Server running on port ${port}`);
 
   if (bot && config.telegram.enabled) {
     if (config.telegram.mode === 'webhook') {
